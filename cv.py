@@ -6,7 +6,7 @@ import math
 def convex_hull_pointing_up(ch):
     points_above_center, points_below_center = [], []
     
-    x, y, w, h = cv2.boundingRect(ch)
+    x, y, w, h = cv.boundingRect(ch)
     aspect_ratio = w / h
 
     if aspect_ratio < 0.8:
@@ -37,11 +37,13 @@ def convex_hull_pointing_up(ch):
 def convex_hull_squared(ch):
     points_above_center, points_below_center = [], []
     
-    x, y, w, h = cv2.boundingRect(ch)
+    x, y, w, h = cv.boundingRect(ch)
     aspect_ratio = w / h
 
-    if aspect_ratio > 0.75 and aspect_ratio < 1.25:
+    if aspect_ratio > 0.7 and aspect_ratio < 1.3:
         vertical_center = y + h / 2
+
+
         return True
     else:
         return False
@@ -52,7 +54,7 @@ upper_yellow_e = np.array([35, 255, 255])
 if not cap.isOpened():
     print("ERROR")
     exit()
-counter = 430
+counter = 0
 while True:
     ret, frame = cap.read()
     if not ret:
@@ -124,12 +126,16 @@ while True:
     #contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     
     copy_result = cv.putText(copy_result, "ENABLED: 0", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-    if convex_hull_pointing_up(cones[0]):
-        copy_result = cv.putText(copy_result, "ORIENTATION: UP", (100, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-    elif convex_hull_squared(cones[0]):
-        copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE", (100, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-    else:
-        copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (100, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
+    if len(cones) >= 1:
+        counter+=1
+        if convex_hull_pointing_up(cones[0]):
+            copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+        elif convex_hull_squared(cones[0]):
+            if counter%6==0:
+                cv.imwrite("images/c_one"+str(counter)+".jpg", result)
+            copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+        else:
+            copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
     
     cv.imshow('frame', copy_result)
 
