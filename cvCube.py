@@ -7,7 +7,7 @@ purple = np.uint8([[[211, 63, 293]]])
 
 
 lower_yellow_e = np.array([250, 209, 255])
-upper_yellow_e = np.array([93, 63, 111])
+upper_yellow_e = np.array([93, 63, 211])
 
 
 if not cap.isOpened():
