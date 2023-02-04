@@ -2,7 +2,7 @@ import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
-from tf_classify import classify
+from tf_classify import classify, coneify
 
 def convex_hull_pointing_up(ch):
     points_above_center, points_below_center = [], []
@@ -10,7 +10,7 @@ def convex_hull_pointing_up(ch):
     x, y, w, h = cv.boundingRect(ch)
     aspect_ratio = w / h
 
-    if aspect_ratio < 0.8:
+    if aspect_ratio < 0.9:
         vertical_center = y + h / 2
 
         for point in ch:
@@ -73,6 +73,7 @@ while True:
     kernel = np.ones((5, 5))
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
     result = cv.medianBlur(result, 5)
+    result = cv.medianBlur(result, 5)
 
     result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
 
@@ -116,10 +117,11 @@ while True:
         rect = cv.boundingRect(ch)
         bounding_rects.append(rect)
 
-    
+    coneis = int(str(coneify(result))[6])
 
     for rect in bounding_rects:
-        copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
+        if coneis==2:
+            copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
 
     #cv.drawContours(qresult, contours, -1, (0,255,0), 2)
 
@@ -127,15 +129,18 @@ while True:
     #contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     
     copy_result = cv.putText(copy_result, "ENABLED: 0", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
-    if len(cones) >= 1:
-        counter+=1
+
+    if counter%6==0:
+            cv.imwrite("images/no/idk" + str(counter) + ".jpg", result)
+
+    counter +=1
+    if len(cones) >= 1 and coneis==2:
         if convex_hull_pointing_up(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(classify(result)), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
-    
     cv.imshow('frame', copy_result)
 
     if cv.waitKey(1) == ord('q'):
