@@ -132,7 +132,7 @@ while True:
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
             if counter%6==0:
-                cv.imwrite("images/c_one"+str(counter)+".jpg", result)
+                cv.imwrite("images/c_two/c_two"+str(counter)+".jpg", result)
             copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
