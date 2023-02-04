@@ -2,6 +2,7 @@ import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
+from tf_classify import classify
 
 def convex_hull_pointing_up(ch):
     points_above_center, points_below_center = [], []
@@ -131,9 +132,7 @@ while True:
         if convex_hull_pointing_up(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
-            if counter%6==0:
-                cv.imwrite("images/c_two/c_two"+str(counter)+".jpg", result)
-            copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+            copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(classify(result)), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
     
