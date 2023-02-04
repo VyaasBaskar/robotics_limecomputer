@@ -23,12 +23,20 @@ while True:
     result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
     copy_result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
 
-    ret,result = cv.threshold(result,100,255,0)
-    ret,copy_result = cv.threshold(copy_result,100,255,0)
+    ret,result = cv.threshold(result,70,255,0)
+    ret,copy_result = cv.threshold(copy_result,70,255,0)
 
     kernel = np.ones((5, 5))
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
     result = cv.medianBlur(result, 5)
+
+    result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
+
+    (h, w) = result.shape[:2]
+    for i in range(h):
+        for j in range(w):
+            if result[i][j]:
+                result[i][j]=255
 
     result = cv.Canny(result, 60, 200)
 
