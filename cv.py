@@ -2,7 +2,9 @@ import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
-from tf_classify import classify, coneify
+from tf_classify import classify, coneify, forwardify
+
+
 
 def convex_hull_pointing_up(ch):
     points_above_center, points_below_center = [], []
@@ -118,9 +120,11 @@ while True:
         bounding_rects.append(rect)
 
     coneis = int(str(coneify(result))[6])
+    forwardis = int(str(forwardify(result))[6])
+
 
     for rect in bounding_rects:
-        if coneis==2:
+        if coneis==2 or forwardis==1:
             copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
 
     #cv.drawContours(qresult, contours, -1, (0,255,0), 2)
@@ -130,17 +134,20 @@ while True:
     
     copy_result = cv.putText(copy_result, "ENABLED: 0", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
 
-    if counter%6==0:
-            cv.imwrite("images/no/idk" + str(counter) + ".jpg", result)
+    #if counter%2==0:
+    #        cv.imwrite("images/fwd/idk" + str(counter) + ".jpg", copy_result)
 
-    counter +=1
-    if len(cones) >= 1 and coneis==2:
+    #counter +=1
+    if forwardis==1:
+        copy_result = cv.putText(copy_result, "ORIENTATION: FWD", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+    elif len(cones) >= 1 and coneis==2:
         if convex_hull_pointing_up(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(classify(result)), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+    
     cv.imshow('frame', copy_result)
 
     if cv.waitKey(1) == ord('q'):
