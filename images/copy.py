@@ -9,3 +9,4 @@ def remove(pathq, pattern):
 remove("./not_is_cone", "copy")
         
 print("B")
+C:\Users\knott\robotics_limecomputer\images\iscone

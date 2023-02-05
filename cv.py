@@ -51,7 +51,7 @@ def convex_hull_squared(ch):
     else:
         return False
 
-lower_yellow_e = np.array([20, 115, 115])
+lower_yellow_e = np.array([20, 100, 100])
 upper_yellow_e = np.array([35, 255, 255])
 
 if not cap.isOpened():
@@ -122,7 +122,6 @@ while True:
         b2.append(cv.minAreaRect(ch))
 
     ret,copy_result = cv.threshold(copy_result,60,255,0)
-    mask = cv.inRange(copy_result, (0, 0, 0), (255, 255, 255))
     copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
     y_copy_result = copy_result
 
@@ -130,15 +129,17 @@ while True:
         try:
             dims = bounding_rects[0]
             y_copy_result = copy_result[dims[1]-20:(dims[1]+dims[3])+20, (dims[0])-10:(dims[0]+dims[2])+20]
+
             cv.imshow("FRAME-K", y_copy_result)
         except:
             pass
+
 
     coneis = int(str(coneify(copy_result))[6])
     forwardis = int(str(forwardify(copy_result))[6])
 
     try:
-        #coneis = int(str(coneify(y_copy_result))[6])
+        coneis = int(str(coneify(y_copy_result))[6])
         pass
     except:
         pass

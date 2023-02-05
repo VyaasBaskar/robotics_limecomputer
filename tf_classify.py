@@ -52,9 +52,9 @@ def coneify(cvimg):
 
     cn = class_name[2:]
 
-    if confidence_score <= 0.98 and cn[6] == "1":
-        cn = "Class 2"
-        print("E: CHANGE")
+    #if confidence_score <= 0.98 and cn[6] == "1":
+    #    cn = "Class 2"
+    #    print("E: CHANGE")
 
     return cn
 
