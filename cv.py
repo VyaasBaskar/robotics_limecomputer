@@ -51,7 +51,7 @@ def convex_hull_squared(ch):
     else:
         return False
 
-lower_yellow_e = np.array([18, 95, 95])
+lower_yellow_e = np.array([20, 115, 115])
 upper_yellow_e = np.array([35, 255, 255])
 
 if not cap.isOpened():
@@ -70,7 +70,7 @@ while True:
     copy_result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
 
     ret,result = cv.threshold(result,70,255,0)
-    ret,copy_result = cv.threshold(copy_result,70,255,0)
+    ret,copy_result = cv.threshold(copy_result,80,255,0)
 
     kernel = np.ones((5, 5))
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
@@ -119,12 +119,16 @@ while True:
         rect = cv.boundingRect(ch)
         bounding_rects.append(rect)
 
+    ret,copy_result = cv.threshold(copy_result,80,255,0)
+
     coneis = int(str(coneify(result))[6])
-    forwardis = int(str(forwardify(result))[6])
+    forwardis = int(str(forwardify(copy_result))[6])
 
-
+    #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
+    mask = cv.inRange(copy_result, (0, 0, 0), (255, 255, 255))
+    copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
     for rect in bounding_rects:
-        if coneis==2 or forwardis==1:
+        if coneis==2:# or forwardis==1:
             copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
 
     #cv.drawContours(qresult, contours, -1, (0,255,0), 2)
@@ -132,19 +136,19 @@ while True:
     #ret,thresh = cv.threshold(copy_result,30,255,0)
     #contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     
-    copy_result = cv.putText(copy_result, "ENABLED: 0", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
+
+
+    copy_result = cv.putText(copy_result, "ENABLED: "+str(coneis), (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
 
     #if counter%2==0:
-    #        cv.imwrite("images/fwd/idk" + str(counter) + ".jpg", copy_result)
-
+    #        cv.imwrite("images/c3/no/idk" + str(counter+1510) + ".jpg", copy_result)
+    #
     #counter +=1
-    if forwardis==1:
-        copy_result = cv.putText(copy_result, "ORIENTATION: FWD", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
-    elif len(cones) >= 1 and coneis==2:
+    if len(cones) >= 1 and coneis==2:
         if convex_hull_pointing_up(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
-            copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(classify(result)), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
+            copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(forwardis), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
     
