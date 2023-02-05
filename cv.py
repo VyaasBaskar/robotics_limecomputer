@@ -2,17 +2,21 @@ import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
-from tf_classify import classify, coneify, forwardify
+from tf_classify import coneify, forwardify
 
 
 
-def convex_hull_pointing_up(ch):
+def convex_hull_pointing_up(ch, b):
     points_above_center, points_below_center = [], []
+
+    (zx, zy), (width, height), angle = b
     
     x, y, w, h = cv.boundingRect(ch)
     aspect_ratio = w / h
 
     if aspect_ratio < 0.9:
+
+        
         vertical_center = y + h / 2
 
         for point in ch:
@@ -36,14 +40,17 @@ def convex_hull_pointing_up(ch):
         return False
         
     return True
+    
 
-def convex_hull_squared(ch):
+def convex_hull_squared(ch, b):
     points_above_center, points_below_center = [], []
     
-    x, y, w, h = cv.boundingRect(ch)
-    aspect_ratio = w / h
+    (x, y), (width, height), angle = b
 
-    if aspect_ratio > 0.7 and aspect_ratio < 1.3:
+    #x, y, w, h = cv.boundingRect(ch)
+    aspect_ratio = width / height
+
+    if aspect_ratio > 0.65 and aspect_ratio < 1.35:
         vertical_center = y + h / 2
 
 
@@ -51,8 +58,8 @@ def convex_hull_squared(ch):
     else:
         return False
 
-lower_yellow_e = np.array([20, 100, 100])
-upper_yellow_e = np.array([35, 255, 255])
+lower_yellow_e = np.array([18, 95, 95])
+upper_yellow_e = np.array([37, 255, 255])
 
 if not cap.isOpened():
     print("ERROR")
@@ -87,7 +94,6 @@ while True:
 
     result = cv.Canny(result, 60, 200)
 
-
     contours, _ = cv.findContours(np.array(result), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     approx_contours = []
 
@@ -119,7 +125,7 @@ while True:
         cones.append(ch)
         rect = cv.boundingRect(ch)
         bounding_rects.append(rect)
-        b2.append(cv.minAreaRect(ch))
+        b2.append(cv.minAreaRect(ch))#cv.boxPoints(cv.minAreaRect(ch)))
 
     ret,copy_result = cv.threshold(copy_result,60,255,0)
     copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
@@ -140,6 +146,7 @@ while True:
 
     try:
         coneis = int(str(coneify(y_copy_result))[6])
+        forwardis = int(str(forwardify(y_copy_result))[6])
         pass
     except:
         pass
@@ -147,7 +154,10 @@ while True:
     #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
     for rect in bounding_rects:
         if coneis==1:# or forwardis==1:
-            copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
+            try:
+                copy_result = cv.drawContours(copy_result,[np.int0(cv.boxPoints(b2[0]))],0,(0,0,255),2)
+            except:
+                copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
     
     if y_copy_result.shape[0]*y_copy_result.shape[1] < 2500:
         y_copy_result=copy_result
@@ -163,15 +173,16 @@ while True:
 
     #if counter%1==0:
     #        try:
-    #            cv.imwrite("images/not_is_cone/cone" + str(counter+0) + ".jpg", y_copy_result)
+    #            cv.imwrite("images/is_forward_2/cone" + str(counter+0) + ".jpg", y_copy_result)
     #        except:
     #            pass
     
     #counter +=1
     if len(cones) >= 1 and coneis==1:
-        if convex_hull_pointing_up(cones[0]):
+        (x, y), (width, height), angle = b2[0]
+        if convex_hull_pointing_up(cones[0], b2[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
-        elif convex_hull_squared(cones[0]):
+        elif convex_hull_squared(cones[0], b2[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(forwardis), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
