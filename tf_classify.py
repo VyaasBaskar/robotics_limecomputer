@@ -37,7 +37,7 @@ def classify(cvimg):
     return class_name[2:]
 
 def coneify(cvimg):
-    cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
+    #cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
     image = cv2.resize(cvimg, (224, 224), interpolation=cv2.INTER_AREA)
 
     image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
@@ -52,14 +52,14 @@ def coneify(cvimg):
 
     cn = class_name[2:]
 
-    if confidence_score <= 0.94 and cn[6] == "1":
+    if confidence_score <= 0.98 and cn[6] == "1":
         cn = "Class 2"
         print("E: CHANGE")
 
     return cn
 
 def forwardify(cvimg):
-    #cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
+    cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
     image = cv2.resize(cvimg, (224, 224), interpolation=cv2.INTER_AREA)
 
     image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
@@ -76,6 +76,6 @@ def forwardify(cvimg):
 
     cn = class_name[2:]
 
-    if cn[6] == "2" and confidence_score < 1.0:
-         cn = "Class 1"
+    #if cn[6] == "2" and confidence_score < 1.0:
+    #     cn = "Class 1"
     return cn

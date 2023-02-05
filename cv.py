@@ -70,7 +70,7 @@ while True:
     copy_result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
 
     ret,result = cv.threshold(result,70,255,0)
-    ret,copy_result = cv.threshold(copy_result,80,255,0)
+    ret,copy_result = cv.threshold(copy_result,60,255,0)
 
     kernel = np.ones((5, 5))
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
@@ -113,23 +113,43 @@ while True:
 
     cones = []
     bounding_rects = []
+    b2 = []
     for ch in convex_hulls_3to10:
         #if convex_hull_pointing_up(ch):
         cones.append(ch)
         rect = cv.boundingRect(ch)
         bounding_rects.append(rect)
+        b2.append(cv.minAreaRect(ch))
 
-    ret,copy_result = cv.threshold(copy_result,80,255,0)
-
-    coneis = int(str(coneify(result))[6])
-    forwardis = int(str(forwardify(copy_result))[6])
-
-    #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
+    ret,copy_result = cv.threshold(copy_result,60,255,0)
     mask = cv.inRange(copy_result, (0, 0, 0), (255, 255, 255))
     copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
+    y_copy_result = copy_result
+
+    if len(bounding_rects) >= 1:
+        try:
+            dims = bounding_rects[0]
+            y_copy_result = copy_result[dims[1]-20:(dims[1]+dims[3])+20, (dims[0])-10:(dims[0]+dims[2])+20]
+            cv.imshow("FRAME-K", y_copy_result)
+        except:
+            pass
+
+    coneis = int(str(coneify(copy_result))[6])
+    forwardis = int(str(forwardify(copy_result))[6])
+
+    try:
+        #coneis = int(str(coneify(y_copy_result))[6])
+        pass
+    except:
+        pass
+
+    #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
     for rect in bounding_rects:
-        if coneis==2:# or forwardis==1:
+        if coneis==1:# or forwardis==1:
             copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
+    
+    if y_copy_result.shape[0]*y_copy_result.shape[1] < 2500:
+        y_copy_result=copy_result
 
     #cv.drawContours(qresult, contours, -1, (0,255,0), 2)
 
@@ -140,11 +160,14 @@ while True:
 
     copy_result = cv.putText(copy_result, "ENABLED: "+str(coneis), (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
 
-    #if counter%2==0:
-    #        cv.imwrite("images/c3/no/idk" + str(counter+1510) + ".jpg", copy_result)
-    #
+    #if counter%1==0:
+    #        try:
+    #            cv.imwrite("images/not_is_cone/cone" + str(counter+0) + ".jpg", y_copy_result)
+    #        except:
+    #            pass
+    
     #counter +=1
-    if len(cones) >= 1 and coneis==2:
+    if len(cones) >= 1 and coneis==1:
         if convex_hull_pointing_up(cones[0]):
             copy_result = cv.putText(copy_result, "ORIENTATION: UP", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         elif convex_hull_squared(cones[0]):
@@ -152,7 +175,7 @@ while True:
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
     
-    cv.imshow('frame', copy_result)
+    cv.imshow('FRAME', copy_result)
 
     if cv.waitKey(1) == ord('q'):
         break

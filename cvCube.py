@@ -19,8 +19,7 @@ while(1):
     ret,result = cv2.threshold(result,90,255,0)
   
     cv2.imshow('result', result)
-      
-    if cv2.waitKey(1) == ord('q'):
+    if cv2.waitKey(1)== ord('q'):
         break
 
   
