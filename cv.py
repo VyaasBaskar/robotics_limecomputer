@@ -2,8 +2,64 @@ import numpy as np
 import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
-from tf_classify import coneify, forwardify
+#from tf_classify import coneify, forwardify
+from keras.models import load_model
+from PIL import Image, ImageOps
+import numpy as np
 
+np.set_printoptions(suppress=True)
+
+model2 = load_model("cone_model/keras_Model.h5", compile=False)
+
+class_names2 = open("cone_model/labels.txt", "r").readlines()
+
+model3 = load_model("next_model2/keras_Model.h5", compile=False)
+
+class_names3 = open("next_model2/labels.txt", "r").readlines()
+
+def coneify(cvimg):
+    #cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
+    image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
+
+    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+
+    # Normalize the image array
+    image = (image / 127.5) - 1
+
+    prediction = model2.predict(image)
+    index = np.argmax(prediction)
+    class_name = class_names2[index]
+    confidence_score = prediction[0][index]
+
+    cn = class_name[2:]
+
+    #if confidence_score <= 0.98 and cn[6] == "1":
+    #    cn = "Class 2"
+    #    print("E: CHANGE")
+
+    return cn
+
+def forwardify(cvimg):
+    cvimg = cv.cvtColor(cvimg, cv.COLOR_BGR2RGB)
+    image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
+
+    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+
+    # Normalize the image array
+    image = (image / 127.5) - 1
+
+    prediction = model3.predict(image)
+    index = np.argmax(prediction)
+    class_name = class_names3[index]
+    confidence_score = prediction[0][index]
+
+    #print(confidence_score)
+
+    cn = class_name[2:]
+
+    #if cn[6] == "2" and confidence_score < 1.0:
+    #     cn = "Class 1"
+    return cn
 
 
 def convex_hull_pointing_up(ch, b):
@@ -51,9 +107,6 @@ def convex_hull_squared(ch, b):
     aspect_ratio = width / height
 
     if aspect_ratio > 0.65 and aspect_ratio < 1.35:
-        vertical_center = y + h / 2
-
-
         return True
     else:
         return False
@@ -83,14 +136,18 @@ while True:
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
     result = cv.medianBlur(result, 5)
     result = cv.medianBlur(result, 5)
+    #result = cv.blur(result, (5, 5))
 
     result = cv.cvtColor(result, cv.COLOR_BGR2GRAY)
 
-    (h, w) = result.shape[:2]
-    for i in range(h):
-        for j in range(w):
-            if result[i][j]:
-                result[i][j]=255
+    np_result = np.array(result)
+    np_result[np_result != 0] = 255
+    #for i in range(h):
+    #    for j in range(w):
+    #        if result[i][j]:
+    #            result[i][j]=255
+
+    result = cv.merge((np_result, np_result, np_result))
 
     result = cv.Canny(result, 60, 200)
 
@@ -152,12 +209,12 @@ while True:
         pass
 
     #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
-    for rect in bounding_rects:
-        if coneis==1:# or forwardis==1:
-            try:
-                copy_result = cv.drawContours(copy_result,[np.int0(cv.boxPoints(b2[0]))],0,(0,0,255),2)
-            except:
-                copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
+    if coneis==1 and bounding_rects:
+        rect = bounding_rects[0]
+        try:
+            copy_result = cv.drawContours(copy_result,[np.int0(cv.boxPoints(b2[0]))],0,(0,0,255),2)
+        except:
+            copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
     
     if y_copy_result.shape[0]*y_copy_result.shape[1] < 2500:
         y_copy_result=copy_result
