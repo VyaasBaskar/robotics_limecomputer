@@ -6,6 +6,7 @@ import math
 from keras.models import load_model
 from PIL import Image, ImageOps
 import numpy as np
+import time
 
 np.set_printoptions(suppress=True)
 
@@ -119,6 +120,7 @@ if not cap.isOpened():
     exit()
 counter = 0
 while True:
+    counter +=1
     ret, frame = cap.read()
     if not ret:
         break
@@ -209,6 +211,7 @@ while True:
         pass
 
     #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
+    """
     if coneis==1 and bounding_rects:
         rect = bounding_rects[0]
         try:
@@ -233,6 +236,8 @@ while True:
     #            cv.imwrite("images/is_forward_2/cone" + str(counter+0) + ".jpg", y_copy_result)
     #        except:
     #            pass
+
+    
     
     #counter +=1
     if len(cones) >= 1 and coneis==1:
@@ -244,7 +249,19 @@ while True:
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
     
-    cv.imshow('FRAME', copy_result)
+    #cv.imshow('FRAME', copy_result)
+
+    """
+    if b2 and coneis==1:
+        (zx, zy), (width, height), angle  = b2[0]
+        if width/height >= 0.75 and width/height <= 1.25 and width*height>=2500:
+            print("DETECTION: " + str(width) + "," + str(height) + " | " + str(zx) + "," + str(zy))
+            pass
+
+    if counter % 30 == 0:
+        counter = 0
+        print("FPS: " + str(30/(time.time()-otime)))
+        otime = time.time()
 
     if cv.waitKey(1) == ord('q'):
         break
