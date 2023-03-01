@@ -155,35 +155,57 @@ def zoom_at(img, zoom=1, angle=0, coord=None):
 
 def dist(point, hc):
     # hc=3.875
-    hm=38.15
-    y=1440
-    x = 1920
-    vtheta=23.367*3.14159/180
-    htheta=48.682*3.14159/180
-    am=58.85*3.14159/180
+    mount_height=38.15
+    y_res=1440
+    x_res = 1920
+    v_fov=23.367
+    h_fov=48.682
+    mount_angle=58.85
     total=[0, 0, 0]
+    x = point[0]
+    y = point[1]
 
-    ny = y/2-point[0]
-    print(ny)
-    nx = x/2-point[1]
-    # print(nx)
+    nx = (2 / (x_res)) * (x - x_res - 0.5)
+    ny = (2 / y_res) (y_res - 0.5 - y)
 
-    ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
-    print(ay*180/3.14159)
-    print((ay+am)*180/3.14159)
-    print(hm-hc)
-    d=math.tan(am+ay)*(hm-hc) 
-    print(d)
-    alpha=math.atan(nx*math.tan(htheta/2)/x)
-    # print(alpha)
-    
-    x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
-    y=math.sqrt(d*d - x*x)
+    vpw = 2 * np.tan(np.deg2rad(h_fov / 2))
+    vph = 2 * np.tan(np.deg2rad(v_fov / 2))
 
-    total[0]=x
-    total[1]=y
-    total[2]=hc
+    x = (vpw / 2) * nx
+    y = (vph / 2) * ny
+
+    ax = np.rad2deg(np.arctan(x,1))
+    ay = np.rad2deg(np.arctan(y,1))
+
+    dist = (mount_height - hc) / (np.tan(np.deg2rad(ax + mount_angle)))
+
+    total[0] = ax
+    total[1] = ay
+    total[2] = dist
+
     return total
+
+    # ny = y/2-point[0]
+    # print(ny)
+    # nx = x/2-point[1]
+    # # print(nx)
+
+    # ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
+    # print(ay*180/3.14159)
+    # print((ay+am)*180/3.14159)
+    # print(hm-hc)
+    # d=math.tan(am+ay)*(hm-hc) 
+    # print(d)
+    # alpha=math.atan(nx*math.tan(htheta/2)/x)
+    # # print(alpha)
+    
+    # x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
+    # y=math.sqrt(d*d - x*x)
+
+    # total[0]=x
+    # total[1]=y
+    # total[2]=hc
+    # return total
 
 def run_cone(frame):
     global total
