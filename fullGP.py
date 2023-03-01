@@ -177,6 +177,7 @@ def dist(point, hc):
     ax = np.rad2deg(np.arctan(x,1))
     ay = np.rad2deg(np.arctan(y,1))
 
+
     dist = (mount_height - hc) / (np.tan(np.deg2rad(ax + mount_angle)))
 
     total[0] = ax
@@ -184,6 +185,11 @@ def dist(point, hc):
     total[2] = dist
 
     return total
+
+    #Second method
+    #dist = 
+
+
 
     # ny = y/2-point[0]
     # print(ny)
