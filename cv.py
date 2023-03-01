@@ -3,64 +3,56 @@ import cv2 as cv
 cap = cv.VideoCapture(0)
 import math
 #from tf_classify import coneify, forwardify
-from keras.models import load_model
+# from keras.models import load_model
 from PIL import Image, ImageOps
 import numpy as np
 import time
 
 np.set_printoptions(suppress=True)
 
-model2 = load_model("cone_model/keras_Model.h5", compile=False)
+# def coneify(cvimg):
+#     #cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
+#     image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
 
-class_names2 = open("cone_model/labels.txt", "r").readlines()
+#     image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
 
-model3 = load_model("next_model2/keras_Model.h5", compile=False)
+#     # Normalize the image array
+#     image = (image / 127.5) - 1
 
-class_names3 = open("next_model2/labels.txt", "r").readlines()
+#     prediction = model2.predict(image)
+#     index = np.argmax(prediction)
+#     class_name = class_names2[index]
+#     confidence_score = prediction[0][index]
 
-def coneify(cvimg):
-    #cvimg = cv2.cvtColor(cvimg, cv2.COLOR_BGR2RGB)
-    image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
+#     cn = class_name[2:]
 
-    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+#     #if confidence_score <= 0.98 and cn[6] == "1":
+#     #    cn = "Class 2"
+#     #    print("E: CHANGE")
 
-    # Normalize the image array
-    image = (image / 127.5) - 1
+#     return cn
 
-    prediction = model2.predict(image)
-    index = np.argmax(prediction)
-    class_name = class_names2[index]
-    confidence_score = prediction[0][index]
+# def forwardify(cvimg):
+#     cvimg = cv.cvtColor(cvimg, cv.COLOR_BGR2RGB)
+#     image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
 
-    cn = class_name[2:]
+#     image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
 
-    #if confidence_score <= 0.98 and cn[6] == "1":
-    #    cn = "Class 2"
-    #    print("E: CHANGE")
+#     # Normalize the image array
+#     image = (image / 127.5) - 1
 
-    return cn
+#     prediction = model3.predict(image)
+#     index = np.argmax(prediction)
+#     class_name = class_names3[index]
+#     confidence_score = prediction[0][index]
 
-def forwardify(cvimg):
-    cvimg = cv.cvtColor(cvimg, cv.COLOR_BGR2RGB)
-    image = cv.resize(cvimg, (224, 224), interpolation=cv.INTER_AREA)
+#     #print(confidence_score)
 
-    image = np.asarray(image, dtype=np.float32).reshape(1, 224, 224, 3)
+#     cn = class_name[2:]
 
-    # Normalize the image array
-    image = (image / 127.5) - 1
-
-    prediction = model3.predict(image)
-    index = np.argmax(prediction)
-    class_name = class_names3[index]
-    confidence_score = prediction[0][index]
-
-    #print(confidence_score)
-
-    cn = class_name[2:]
-
-    #if cn[6] == "2" and confidence_score < 1.0:
-    #     cn = "Class 1"
-    return cn
+#     #if cn[6] == "2" and confidence_score < 1.0:
+#     #     cn = "Class 1"
+#     return cn
 
 
 def convex_hull_pointing_up(ch, b):
@@ -107,32 +99,34 @@ def convex_hull_squared(ch, b):
     #x, y, w, h = cv.boundingRect(ch)
     aspect_ratio = width / height
 
-    if aspect_ratio > 0.65 and aspect_ratio < 1.35:
+    if aspect_ratio > 0.55 and aspect_ratio < 1.45:
         return True
     else:
         return False
 
-lower_yellow_e = np.array([18, 95, 95])
-upper_yellow_e = np.array([37, 255, 255])
+lower_yellow_e = np.array([22, 100, 105])
+upper_yellow_e = np.array([30, 255, 255])
 
 if not cap.isOpened():
     print("ERROR")
     exit()
 counter = 0
+otime=time.time()
 while True:
     counter +=1
     ret, frame = cap.read()
-    if not ret:
-        break
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    cv.imwrite('real.png', hsv)
     mask = cv.inRange(hsv, lower_yellow_e, upper_yellow_e)
     result = cv.bitwise_and(frame, frame, mask = mask)
 
     result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
+    cv.imwrite('kushcone.png', result)
+    # print(result[0][0])
     copy_result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
 
     ret,result = cv.threshold(result,70,255,0)
-    ret,copy_result = cv.threshold(copy_result,60,255,0)
+    # ret,copy_result = cv.threshold(copy_result,60,255,0)
 
     kernel = np.ones((5, 5))
     result = cv.morphologyEx(result, cv.MORPH_OPEN, kernel)
@@ -186,29 +180,28 @@ while True:
         bounding_rects.append(rect)
         b2.append(cv.minAreaRect(ch))#cv.boxPoints(cv.minAreaRect(ch)))
 
-    ret,copy_result = cv.threshold(copy_result,60,255,0)
+    # ret,copy_result = cv.threshold(copy_result,60,255,0)
     copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
     y_copy_result = copy_result
-
     if len(bounding_rects) >= 1:
         try:
             dims = bounding_rects[0]
-            y_copy_result = copy_result[dims[1]-20:(dims[1]+dims[3])+20, (dims[0])-10:(dims[0]+dims[2])+20]
+            y_copy_result = copy_result[dims[1]:(dims[1]+dims[3]), (dims[0]):(dims[0]+dims[2])]
+            # y_copy_result = cv.bitwise_and(y_copy_result, y_copy_result, cv.inRange(hsv, lower_yellow_e, upper_yellow_e))
 
-            cv.imshow("FRAME-K", y_copy_result)
         except:
             pass
 
 
-    coneis = int(str(coneify(copy_result))[6])
-    forwardis = int(str(forwardify(copy_result))[6])
+    # coneis = int(str(coneify(copy_result))[6])
+    # forwardis = int(str(forwardify(copy_result))[6])
 
-    try:
-        coneis = int(str(coneify(y_copy_result))[6])
-        forwardis = int(str(forwardify(y_copy_result))[6])
-        pass
-    except:
-        pass
+    # try:
+    #     coneis = int(str(coneify(y_copy_result))[6])
+    #     forwardis = int(str(forwardify(y_copy_result))[6])
+    #     pass
+    # except:
+    #     pass
 
     #copy_result=cv.cvtColor(copy_result, cv.COLOR_GRAY2RGB)
     """
@@ -218,7 +211,7 @@ while True:
             copy_result = cv.drawContours(copy_result,[np.int0(cv.boxPoints(b2[0]))],0,(0,0,255),2)
         except:
             copy_result = cv.rectangle(copy_result, (rect[0], rect[1]), (rect[0]+rect[2], rect[1]+rect[3]), (1, 255, 1), 3)
-    
+
     if y_copy_result.shape[0]*y_copy_result.shape[1] < 2500:
         y_copy_result=copy_result
 
@@ -226,19 +219,19 @@ while True:
 
     #ret,thresh = cv.threshold(copy_result,30,255,0)
     #contours, _ = cv.findContours(thresh, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    
+
 
 
     copy_result = cv.putText(copy_result, "ENABLED: "+str(coneis), (50, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv.LINE_AA)
 
     #if counter%1==0:
     #        try:
-    #            cv.imwrite("images/is_forward_2/cone" + str(counter+0) + ".jpg", y_copy_result)
+    #            cv.imshow("images/is_forward_2/cone" + str(counter+0) + ".jpg", y_copy_result)
     #        except:
     #            pass
 
-    
-    
+
+
     #counter +=1
     if len(cones) >= 1 and coneis==1:
         (x, y), (width, height), angle = b2[0]
@@ -248,23 +241,60 @@ while True:
             copy_result = cv.putText(copy_result, "ORIENTATION: SQUARE: "+str(forwardis), (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
         else:
             copy_result = cv.putText(copy_result, "ORIENTATION: SIDE", (50, 100), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 1, cv.LINE_AA)
-    
+
     #cv.imshow('FRAME', copy_result)
 
     """
-    if b2 and coneis==1:
+    orientation = ""
+    verticalWeightage=0
+    horizontalWeightage=0
+    mean_position=0
+    cv.imwrite('bound.png', y_copy_result)
+    if b2:
         (zx, zy), (width, height), angle  = b2[0]
-        if width/height >= 0.75 and width/height <= 1.25 and width*height>=2500:
-            print("DETECTION: " + str(width) + "," + str(height) + " | " + str(zx) + "," + str(zy))
-            pass
+        mask = y_copy_result[:, :, 2] != 0
+        
+
+        mean_position = np.mean(np.argwhere(mask), axis=0)
+        kush=y_copy_result
+        print(mean_position)
+        print(kush.shape)
+        horizontalWeightage = ((y_copy_result.shape[1]/2)-mean_position[1])*kush.shape[0]
+        verticalWeightage = ((y_copy_result.shape[0]/2)-mean_position[0])*kush.shape[1]
+        # print(str(int(y_copy_result.shape[0])) +" - " +str(mean_position[0]))
+
+        # print(str(int(y_copy_result.shape[1])) +" - " +str(mean_position[1]))
+        print('\n\n')
+        try:
+            y_copy_result = cv.circle(y_copy_result, (int(mean_position[1]), int(mean_position[0])), 3, (244, 0, 0), 3)
+            y_copy_result = cv.circle(y_copy_result, (int(kush.shape[1]/2), int(kush.shape[0]/2)), 3, (0, 244, 0), 3)
+            cv.imshow("FRAME-K", y_copy_result)
+        except Exception as e:
+            print(e)
+        # print(horizontalWeightage)
+        # print(verticalWeightage)
+
+        if convex_hull_squared(cones[0], b2[0]) and not convex_hull_pointing_up(cones[0], b2[0]):
+            if(verticalWeightage>100):
+                print("fwd" + str(verticalWeightage))
+            else:
+                print("bkwd" +str(verticalWeightage))
+        elif convex_hull_pointing_up(cones[0], b2[0]) and not convex_hull_squared:
+            print("up")
+        else:
+            print("side")
+
+        # else:
+        #     print("DETECTION: " + str(width) + "," + str(height) + " | " + str(zx) + "," + str(zy)+"|| ORIENTATION: "+orientation)
+        pass
 
     if counter % 30 == 0:
         counter = 0
-        print("FPS: " + str(30/(time.time()-otime)))
+        # print("FPS: " + str(30/(time.time()-otime)))
         otime = time.time()
 
-    if cv.waitKey(1) == ord('q'):
-        break
+# if cv.waitKey(1) == ord('q'):
+#     break
 
 
 cap.release()
