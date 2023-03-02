@@ -153,65 +153,69 @@ def zoom_at(img, zoom=1, angle=0, coord=None):
     
     return result
 
+def deg2rad(n):
+    return 3.14159*n/180
+
 def dist(point, hc):
     # hc=3.875
-    mount_height=38.15
-    y_res=1440
-    x_res = 1920
-    v_fov=23.367
-    h_fov=48.682
-    mount_angle=58.85
+    hm=38.15
+    y=1440
+    x = 1920
+    vtheta=deg2rad(28)
+    htheta=deg2rad(48.682)
+    am=deg2rad(64.4)
     total=[0, 0, 0]
     x = point[0]
     y = point[1]
 
-    nx = (2 / (x_res)) * (x - x_res - 0.5)
-    ny = (2 / y_res) (y_res - 0.5 - y)
+    # nx = (2 / (x_res)) * (x - x_res - 0.5)
+    # ny = (2 / y_res) * (y_res - 0.5 - y)
 
-    vpw = 2 * np.tan(np.deg2rad(h_fov / 2))
-    vph = 2 * np.tan(np.deg2rad(v_fov / 2))
+    # vpw = 2 * 0.452379
+    # vph = 2 * 0.2067735
 
-    x = (vpw / 2) * nx
-    y = (vph / 2) * ny
+    # x = (vpw / 2) * nx
+    # y = (vph / 2) * ny
 
-    ax = np.rad2deg(np.arctan(x,1))
-    ay = np.rad2deg(np.arctan(y,1))
+    # ax = 180*(math.atan(x))/3.14159
+    # ay = 180*math.atan(y)/3.14159
+    # print(ay+mount_angle)
 
 
-    dist = (mount_height - hc) / (np.tan(np.deg2rad(ax + mount_angle)))
+    # dist = (mount_height - hc) / (np.tan(np.deg2rad(ay + mount_angle)))
 
-    total[0] = ax
-    total[1] = ay
-    total[2] = dist
+    # total[0] = ax
+    # total[1] = ay
+    # total[2] = dist
 
-    return total
+    # return total
 
     #Second method
     #dist = 
 
 
 
-    # ny = y/2-point[0]
-    # print(ny)
-    # nx = x/2-point[1]
-    # # print(nx)
+    ny = y/2-point[0]
+    print(ny)
+    nx = x/2-point[1]
+    # print(nx)
 
-    # ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
-    # print(ay*180/3.14159)
-    # print((ay+am)*180/3.14159)
-    # print(hm-hc)
-    # d=math.tan(am+ay)*(hm-hc) 
-    # print(d)
-    # alpha=math.atan(nx*math.tan(htheta/2)/x)
-    # # print(alpha)
+    ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
+    print(ay*180/3.14159)
+    print((ay+am)*180/3.14159)
+    print(hm-hc)
+    d=math.tan(am+ay)*(hm-hc) 
+    print(d)
+    alpha=math.atan(nx*math.tan(htheta/2)/x)
+    # print(alpha)
     
-    # x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
-    # y=math.sqrt(d*d - x*x)
+    x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
+    y=math.sqrt(d*d - x*x)
 
-    # total[0]=x
-    # total[1]=y
-    # total[2]=hc
-    # return total
+    total[0]=x
+    total[1]=y
+    total[2]=hc
+    return total
 
 def run_cone(frame):
     global total
