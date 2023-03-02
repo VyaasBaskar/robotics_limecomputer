@@ -8,10 +8,10 @@ import math
 import time
 import threading
 #from keras.models import load_model
-from networktables import NetworkTables
+# from networktables import NetworkTables
 
-NetworkTables.initialize(server='roborio-846-frc.local')
-table = NetworkTables.getTable("GamePieces")
+# NetworkTables.initialize(server='roborio-846-frc.local')
+# table = NetworkTables.getTable("GamePieces")
 
 print("SCRIPT START")
 print("SCRIPT: imported all necessary libs")
@@ -158,27 +158,27 @@ def dist(point, hc):
     mount_height=38.15
     y_res=1440
     x_res = 1920
-    v_fov=23.367
-    h_fov=48.682
-    mount_angle=58.85
+    v_fov=23.367 * (3.14159) / (180)
+    h_fov=48.682 * (3.14159) / (180)
+    mount_angle=58.85 * (3.14159) / (180)
     total=[0, 0, 0]
     x = point[0]
     y = point[1]
 
-    nx = (2 / (x_res)) * (x - x_res - 0.5)
-    ny = (2 / y_res) (y_res - 0.5 - y)
+    nx = (2 / (x_res)) * (x - x_res)
+    ny = (2 / y_res) * (y_res - y)
 
-    vpw = 2 * np.tan(np.deg2rad(h_fov / 2))
-    vph = 2 * np.tan(np.deg2rad(v_fov / 2))
+    vpw = 2 * np.tan(h_fov / 2)
+    vph = 2 * np.tan(v_fov / 2)
 
     x = (vpw / 2) * nx
     y = (vph / 2) * ny
 
-    ax = np.rad2deg(np.arctan(x,1))
-    ay = np.rad2deg(np.arctan(y,1))
+    ax = np.arctan(x,1)
+    ay = np.arctan(y,1)
 
 
-    dist = (mount_height - hc) / (np.tan(np.deg2rad(ax + mount_angle)))
+    dist = (mount_height - hc) / (np.tan(ay + mount_angle))
 
     total[0] = ax
     total[1] = ay
@@ -493,13 +493,13 @@ def run_cone(frame):
             # fwd.close()
             distance = base_length*k_cone
             angle=52.29*(122-zx)/122            
-            table.putNumber("coneDistance", distance)
-            table.putNumber("coneAngle", angle)
-            table.putNumber("coneOrientation", orientation)
-            return
-    table.putNumber("coneDistance", 0)
-    table.putNumber("coneAngle", 0)
-    table.putNumber("coneProbability", 0)
+    #         table.putNumber("coneDistance", distance)
+    #         table.putNumber("coneAngle", angle)
+    #         table.putNumber("coneOrientation", orientation)
+    #         return
+    # table.putNumber("coneDistance", 0)
+    # table.putNumber("coneAngle", 0)
+    # table.putNumber("coneProbability", 0)
     # print('xcfghjkgfdfghjkl', cones[0])
     cv.drawContours(result, cones, 0, (255, 255, 255), 3)
     cv.imwrite('awf.png', result)
