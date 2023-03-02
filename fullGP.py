@@ -165,20 +165,20 @@ def dist(point, hc):
     x = point[0]
     y = point[1]
 
-    nx = (2 / (x_res)) * (x - x_res)
-    ny = (2 / y_res) * (y_res - y)
+    nx = (2 / (x_res)) * (x - x_res - 0.5)
+    ny = (2 / y_res) * (y_res - 0.5 - y)
 
-    vpw = 2 * np.tan(h_fov / 2)
-    vph = 2 * np.tan(v_fov / 2)
+    vpw = 2 * np.tan([h_fov / 2])
+    vph = 2 * np.tan([v_fov / 2])
 
     x = (vpw / 2) * nx
     y = (vph / 2) * ny
 
-    ax = np.arctan(x,1)
-    ay = np.arctan(y,1)
+    ax = np.arctan([x])
+    ay = np.arctan([y])
 
 
-    dist = (mount_height - hc) / (np.tan(ay + mount_angle))
+    dist = (mount_height - hc) / (np.tan([ay + mount_angle]))
 
     total[0] = ax
     total[1] = ay
