@@ -153,65 +153,71 @@ def zoom_at(img, zoom=1, angle=0, coord=None):
     
     return result
 
+def deg2rad(n):
+    return 3.14159*n/180
+
 def dist(point, hc):
     # hc=3.875
-    mount_height=38.15
-    y_res=1440
-    x_res = 1920
-    v_fov=23.367
-    h_fov=48.682
-    mount_angle=58.85
+    hm=28
+    y=864
+    x = 1056
+    vtheta=deg2rad(33)
+    htheta=deg2rad(47.92)
+    am=deg2rad(56.66)
     total=[0, 0, 0]
-    x = point[0]
-    y = point[1]
 
-    nx = (2 / (x_res)) * (x - x_res - 0.5)
-    ny = (2 / y_res) (y_res - 0.5 - y)
+    rat = vtheta/y
+    # x = point[1]
+    # y = point[0]
 
-    vpw = 2 * np.tan(np.deg2rad(h_fov / 2))
-    vph = 2 * np.tan(np.deg2rad(v_fov / 2))
+    # nx = (2 / (x_res)) * (x - x_res - 0.5)
+    # ny = (2 / y_res) * (y_res - 0.5 - y)
 
-    x = (vpw / 2) * nx
-    y = (vph / 2) * ny
+    # vpw = 2 * 0.452379
+    # vph = 2 * 0.2067735
 
-    ax = np.rad2deg(np.arctan(x,1))
-    ay = np.rad2deg(np.arctan(y,1))
+    # x = (vpw / 2) * nx
+    # y = (vph / 2) * ny
+
+    # ax = 180*(math.atan(x))/3.14159
+    # ay = 180*math.atan(y)/3.14159
+    # print(ay+mount_angle)
 
 
-    dist = (mount_height - hc) / (np.tan(np.deg2rad(ax + mount_angle)))
+    # dist = (mount_height - hc) / (np.tan(np.deg2rad(ay + mount_angle)))
 
-    total[0] = ax
-    total[1] = ay
-    total[2] = dist
+    # total[0] = ax
+    # total[1] = ay
+    # total[2] = dist
 
-    return total
+    # return total
 
     #Second method
     #dist = 
 
 
-
-    # ny = y/2-point[0]
+    # print(point[0])
+    ny = y/2-point[0]
     # print(ny)
-    # nx = x/2-point[1]
-    # # print(nx)
+    nx = x/2-point[1]
+    # print(nx)
 
-    # ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
-    # print(ay*180/3.14159)
-    # print((ay+am)*180/3.14159)
-    # print(hm-hc)
-    # d=math.tan(am+ay)*(hm-hc) 
-    # print(d)
-    # alpha=math.atan(nx*math.tan(htheta/2)/x)
-    # # print(alpha)
-    
-    # x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
-    # y=math.sqrt(d*d - x*x)
+    ay= math.atan(math.tan(vtheta/2)*ny/(y/2))
+    print(ay*180/3.14159)
+    print((ay+am)*180/3.14159)
+    print(hm-hc)
+    posy=math.tan(am+ay)*(hm-hc) 
+    # print(posy)
+    tx=math.atan(nx*math.tan(htheta/2)/(x/2))
+    # print(alpha)
+    # print(tx)
+    print(posy/math.cos(tx))
+    posx=posy*math.tan(tx)
 
-    # total[0]=x
-    # total[1]=y
-    # total[2]=hc
-    # return total
+    total[0]=posx
+    total[1]=posy
+    total[2]=hc
+    return total
 
 def run_cone(frame):
     global total
@@ -221,19 +227,34 @@ def run_cone(frame):
     k_Fwd=-0.05
     frame=cv.resize(frame, (frame.shape[1]*3, frame.shape[0]*3), interpolation=cv.INTER_AREA)
 
-    lower_yellow_e = np.array([19, 60, 100])
-    upper_yellow_e = np.array([32, 255, 255])
 
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
-    mask = cv.inRange(hsv, lower_yellow_e, upper_yellow_e)
-    result = cv.bitwise_and(frame, frame, mask = mask)
+    #mask = cv.inRange(hsv, lower_yellow_e, upper_yellow_e)
+    #result = cv.bitwise_and(frame, frame, mask = mask)
+
+#---
+    upper_orange1 = np.array([0, 227, 227])
+    upper_orange2 = np.array([34, 255, 255])
+
+    imgThreshHigh = cv.inRange(hsv, upper_orange1, upper_orange2)
+
+   # mask = cv.bitwise_and(imgThreshHL, imgThreshHigh)
+
+    result = cv.bitwise_and(frame, frame, mask = imgThreshHigh)
+
+    #result = cv.bitwise_or(imgThreshLow, imgThreshHigh)
+#--
+
+    kernel = np.ones((5,5),np.uint8)
+
+    result = cv.erode(result, kernel, iterations = 3)
+    result = cv.dilate(result, kernel, iterations = 2)
 
 
     # result = zoom_at(result, 3, coord=(77, 97))
 
     e_result=result
 
-    cv.imwrite('real.png', result)
     result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
     #copy_result = cv.cvtColor(result, cv.COLOR_HSV2BGR)
     #copy_result = cv.cvtColor(copy_result, cv.COLOR_BGR2GRAY)
@@ -269,13 +290,12 @@ def run_cone(frame):
 
     result = cv.Canny(result, 60, 200)
 
-    cv.imwrite('FRAME-K.png', result)
 
     contours, _ = cv.findContours(np.array(result), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
     approx_contours = []
 
     for c in contours:
-        approx = cv.approxPolyDP(c, 16, closed = True)
+        approx = cv.approxPolyDP(c, 0.06 * cv.arcLength(c, True), closed = True)
         approx_contours.append(approx)
 
     approx_contours = sorted(approx_contours, key=lambda c: cv.contourArea(c), reverse=True)
@@ -290,12 +310,9 @@ def run_cone(frame):
 
     convex_hulls_3to10 = []
     for ch in all_convex_hulls:
-        #if 3 <= len(ch) <= 18:
-        convex_hulls_3to10.append(cv.convexHull(ch))
+        if 3 <= len(ch) <= 6:
+            convex_hulls_3to10.append(cv.convexHull(ch))
 
-    # print("waef;oihawefoh"+str(convex_hulls_3to10))
-    print('HI', str(result.shape))
-    # cv.imwrite("FRAME.png", result)
     cones = []
     bounding_rects = []
     b2 = []
@@ -305,93 +322,9 @@ def run_cone(frame):
         rect = cv.boundingRect(ch)
         bounding_rects.append(rect)
         b2.append(cv.minAreaRect(ch))
-        # # cv.boxPoints(cv.minAreaRect(ch))
-        # print(b2[0][0], b2[0][1][0])
-        # # cv.rectangle(result, b2[0][0], (b2[0][0][0]+b2[0][1][0], b2[0][0][1]+b2[0][1][1]), (255, 255, 255), 1)
-        # print('hi')
-        # print(bounding_rects)
-        # print('hello')
-    # result
-    # cv.imwrite('hi.png', result)
 
-    # ret,copy_result = cv.threshold(copy_result,60,255,0)
-    # copy_result = cv.bitwise_and(frame, copy_result, mask=mask)
-    # copy_result = cv.cvtColor(copy_result, cv.COLOR_BGR2GRAY)
-    # copy_result = cv.fastNlMeansDenoising(copy_result, None, 30, 7, 21) 
-    # y_copy_result = copy_result
-    # cv.imwrite('hello.png', y_copy_result)
-
-    # coneis = 0#int(str(coneify(copy_result))[6])
-    # forwardis = -1#int(str(forwardify(copy_result))[6])
-    # dims=0
-    # try:
     dims = bounding_rects[0]
     y_copy_result = fake_e_result[dims[1]:(dims[1]+dims[3]), (dims[0]):(dims[0]+dims[2])]
-    # print("awe;ifvuhwhibelsgoj[eifwnk " + str(dims))
-    # zoomed_result = zoom_at(e_result, 3, coord=(dims[1]+dims[3]/2, dims[0]+dims[2]/2))
-    # cv.imwrite('zoomed.png', zoomed_result)
-
-    # #–––––––––––––––––––––ZOOM––––––––––––––––––––––
-    
-    # zoomed_result = cv.cvtColor(zoomed_result, cv.COLOR_BGR2GRAY)
-
-
-    # zoomed_result = cv.medianBlur(zoomed_result, 5)
-
-    # kernel = np.ones((1, 1))
-    # zoomed_result = cv.morphologyEx(zoomed_result, cv.MORPH_OPEN, kernel)
-
-
-    # zoomed_result = cv.medianBlur(zoomed_result, 5)
-    # # zoomed_result = cv.medianBlur(zoomed_result, 5)
-    # #zoomed_result = cv.blur(zoomed_result, (5, 5))
-
-
-    # np_zoomed_result = np.array(zoomed_result)
-    # np_zoomed_result[np_zoomed_result != 0] = 255
-    # #for i in range(h):
-    # #    for j in range(w):
-    # #        if zoomed_result[i][j]:
-    # #            zoomed_result[i][j]=255
-    
-
-    # zoomed_result = cv.merge((np_zoomed_result, np_zoomed_result, np_zoomed_result))
-    # zoomed_e_result=zoomed_result
-    # zoomed_result = cv.Canny(zoomed_result, 60, 200)
-    # zoomed_contours, _ = cv.findContours(np.array(result), cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
-    # zoomed_approx_contours = []
-
-    # for c in zoomed_contours:
-    #     zoomed_approx = cv.approxPolyDP(c, 16, closed = True)
-    #     zoomed_approx_contours.append(approx)
-
-    # zoomed_approx_contours = sorted(zoomed_approx_contours, key=lambda c: cv.contourArea(c), reverse=True)
-    # zoomed_approx_contours = [zoomed_approx_contours[0]]
-
-    # zoomed_all_convex_hulls = []
-    # for ac in zoomed_approx_contours:
-    #     zoomed_all_convex_hulls.append(cv.convexHull(ac))
-
-    # zoomed_convex_hulls_3to10=zoomed_all_convex_hulls
-    # for ch in all_convex_hulls:
-    #     #if  3 <= len(ch) <= 18:
-    #     zoomed_convex_hulls_3to10.append(cv.convexHull(ch))
-
-
-    # # cv.imwrite("FRAME.png", result)
-    # b2 = []
-    # for ch in zoomed_convex_hulls_3to10:
-    #     #if convex_hull_pointing_up(ch):
-    #     b2.append(cv.minAreaRect(ch))
-    #     # cv.boxPoints(cv.minAreaRect(ch))
-    #     print(b2)
-    #     # cv.rectangle(result, b2[0][0], (b2[0][0][0]+b2[0][1][0], b2[0][0][1]+b2[0][1][1]), (255, 255, 255), 1)
-    #     # print('hi')
-    # # except Exception as e:
-    #     # print(e)
-    #     # print("awpieofhuwapho;j")
-
-    # cv.imwrite('bound.png', y_copy_result)
 
     cv.rectangle(fake_e_result, (bounding_rects[0][0], bounding_rects[0][1]), (bounding_rects[0][0]+bounding_rects[0][2], bounding_rects[0][1]+bounding_rects[0][3]), (255, 255, 255), 1)
 
@@ -399,70 +332,33 @@ def run_cone(frame):
 
     boxCenter=((box[0][0]+box[2][0])/2, (box[0][1]+box[2][1])/2)
 
-    # y_copy_result.
-
-
-    # box=np.int0(box)
-
-    # cv.drawContours(e_result, [box], 0, (0, 0, 255), 2)
-
-    # width = int(b2[0][1][0])
-    # height = int(b2[0][1][1])
-
-    # src_pts = box.astype("float32")
-    # dst_pts = np.array([[0, height-1],
-    #                 [0, 0],
-    #                 [width-1, 0],
-    #                 [width-1, height-1]], dtype="float32")
-
-    # # the perspective transformation matrix
-    # M = cv.getPerspectiveTransform(src_pts, dst_pts)
-
-    # # directly warp the rotated rectangle to get the straightened rectangle
-    # warped = cv.warpPerspective(e_result, M, (width, height))
-
-
-    # cv.imwrite('warped.png', warped)
     mask = y_copy_result[:, :, 2] != 0
-    # (zx, zy), (width, height), angle  = b2[0]
-    # print('HOIWAEHF' + str(cv.boxPoints(b2[0])))
+
 
     mean_position = np.mean(np.argwhere(mask), axis=0)
     mean_position=(mean_position[0]+dims[1], mean_position[1]+dims[0])
-    # print(mean_positi
-    # horizontalWeightage = ((y_copy_result.shape[1]/2)-mean_position[1])*y_copy_result.shape[0]
-    # verticalWeightage = ((y_copy_result.shape[0]/2)-mean_position[0])*y_copy_result.shape[1]
-    #print(verticalWeightage)
+
 
     verticalWeightage= (mean_position[0]-boxCenter[1])/b2[0][1][1]
     horizontalWeightage= (mean_position[1]-boxCenter[0])/b2[0][1][0]
 
     fake_e_result = cv.circle(fake_e_result, (int(boxCenter[0]), int(boxCenter[1])), 3, (244, 0, 0), 3)
     fake_e_result = cv.circle(fake_e_result, (int(mean_position[1]), int(mean_position[0])), 3, (0, 244, 0), 3)
-    fake_e_result=cv.circle(fake_e_result, (960, 720), 30, (0, 0, 255), 30)
+    fake_e_result=cv.circle(fake_e_result, (528, 432), 30, (0, 0, 255), 30)
     fake_e_result=cv.drawContours(fake_e_result, [np.int0(cv.boxPoints(b2[0]))], 0, (0, 0, 255), 2)
     print(str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
     # print(boxCenter)
 
     cv.imwrite('e_result.png', fake_e_result)
+    cv.imshow('e_result.png', fake_e_result)
 
 
-    #cv.imwrite("FRAME-K.jpg", e_result)
-    #cv.imwrite("FRAME-K.jpg", y_copy_result)
-
-    
-
-    #cv.imshow("FRAME-K", y_copy_result)
-    #if counter % 5 ==0:
-    #    ptc, ptf = coneis, forwardis
-    #else:
-    #    coneis, forwardis = ptc, ptf
 
 
 
     if b2:# and coneis==1:
         (zx, zy), (width, height), angle  = b2[0]
-        if width/height >= 0.1 and width/height <= 10 and width*height>=16:
+        if width/height >= 0.2 and width/height <= 5 and width*height>=25:
             # print(bounding_rects[0][2]/bounding_rects[0][3])
             base_length=0 
             orientation=0
@@ -479,18 +375,9 @@ def run_cone(frame):
             else:
                 base_length=width
             print("CONE DETECTION: ", str(dist(mean_position, 4)))
-            # print("ORIENTATION:       " + str(orientation))
-            # print("k_cone: "+str(float(base_length)))
-            # if(base_length>100):
-            #     cv.imwrite('120e.png', fake_e_result)
-            #     # print('ANGLEA;LEWIFHA:   ', str(b2[0][2]))
-            # else:
-            #     # print('awfophuapowefhj:   ', str(b2[0][2]))
+
             total+=verticalWeightage
             frames+=1
-            # print(total)
-            # print(frames)
-            # fwd.close()
             distance = base_length*k_cone
             angle=52.29*(122-zx)/122            
             table.putNumber("coneDistance", distance)
@@ -512,7 +399,7 @@ def run_cone(frame):
 #@jit(target_backend='cuda')
 def CUDA_OPTIMIZED_RUN846():
     print("SCRIPT: ATTEMPTING CAM 1")
-    cap = cv.VideoCapture(0)#"/home/tech/gamepiece.com/Cone.mov")
+    cap = cv.VideoCapture(1,cv.CAP_DSHOW)#"/home/tech/gamepiece.com/Cone.mov")
     if cap.isOpened()==False:
         print("SCRIPT: ATTEMPTING CAM 2")
         cap = cv.VideoCapture(0)

@@ -1,6 +1,6 @@
 import numpy as np
 import cv2 as cv
-cap = cv.VideoCapture(0)
+cap = cv.VideoCapture(1)
 import math
 #from tf_classify import coneify, forwardify
 # from keras.models import load_model
