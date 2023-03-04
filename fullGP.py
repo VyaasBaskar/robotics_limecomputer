@@ -21,6 +21,7 @@ print("SCRIPT: imported all necessary libs")
 total=0
 frames=0
 pyd = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+pycu = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 np.set_printoptions(suppress=True)
 
 #@jit(target_backend='cuda')
@@ -75,6 +76,7 @@ def convex_hull_side(ch, b):
 
 
 def run_cube(frame):
+    global pycu 
     k_cube=1
     hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     #hsv = cv.medianBlur(hsv, 5)
@@ -139,11 +141,29 @@ def run_cube(frame):
         bounding_rects.append(rect)
         b2.append(cv.minAreaRect(ch))
 
+   #cv.imwrite("e_result.png", result)
+    print('cube res:   ', str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
+    
+    tpycu = 0
+
     if b2:
         (zx, zy), (width, height), angle  = b2[0]
         if width/height >= 0.5 and width/height <= 2 and width*height>=1000:
-            print("CUBE DETECTION: " + str(dist([zx+width/2, zx+height/2], 6.75)))
+            tpycu = 1
+            distArr=dist([zy+height/2, zx+width/2], 6.75, (320, 240))
+            print("CUBE DETECTION: " + str(distArr))
+            table.putNumber("cubeDistance", distArr[1][0])
+            table.putNumber("cubeAngle", distArr[1][1])
+            table.putNumber("cubeX", distArr[0][0])
+            table.putNumber("cubeY", distArr[0][1])
+            table.putNumber("cubeY", distArr[0][2])
             pass
+    
+    pycu.insert(0, tpycu)
+    pycu.pop(-1)
+    norm_is = [c/24 for c in pycu]
+    table.putNumber("cubeProbability", sum(norm_is))
+
 
 
 def zoom_at(img, zoom=1, angle=0, coord=None):
@@ -158,11 +178,11 @@ def zoom_at(img, zoom=1, angle=0, coord=None):
 def deg2rad(n):
     return 3.14159*n/180
 
-def dist(point, hc):
+def dist(point, hc, res):
     # hc=3.875
     hm=28
-    y=432
-    x = 528
+    y=res[1]
+    x = res[0]
     vtheta=deg2rad(33)
     htheta=deg2rad(47.92)
     am=deg2rad(56.66)
@@ -205,15 +225,15 @@ def dist(point, hc):
     # print(nx)
 
     ay= math.atan(math.tan(vtheta/2)*ny/(y/2))
-    print(ay*180/3.14159)
-    print((ay+am)*180/3.14159)
-    print(hm-hc)
+    #print(ay*180/3.14159)
+    #print((ay+am)*180/3.14159)
+    #print(hm-hc)
     posy=math.tan(am+ay)*(hm-hc) 
     # print(posy)
     tx=math.atan(nx*math.tan(htheta/2)/(x/2))
     # print(alpha)
     # print(tx)
-    print(posy/math.cos(tx))
+    #print(posy/math.cos(tx))
     posx=posy*math.tan(tx)
 
     total[0]=posx
@@ -222,7 +242,7 @@ def dist(point, hc):
 
     return (total, [posy/math.cos(tx), tx])
 
-def run_cone(frame, dq):
+def run_cone(frame):
     global total
     global frames
     global pyd
@@ -237,8 +257,8 @@ def run_cone(frame, dq):
     #result = cv.bitwise_and(frame, frame, mask = mask)
 
 #---
-    upper_orange1 = np.array([0, 210, 175])
-    upper_orange2 = np.array([33, 255, 255])
+    upper_orange1 = np.array([0, 205, 170])
+    upper_orange2 = np.array([35, 255, 255])
 
     imgThreshHigh = cv.inRange(hsv, upper_orange1, upper_orange2)
 
@@ -304,6 +324,7 @@ def run_cone(frame, dq):
 
     approx_contours = sorted(approx_contours, key=lambda c: cv.contourArea(c), reverse=True)
     pyd_tp = [0, -1]
+    print('cone res:   ', str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
     if (len(approx_contours)):
         approx_contours = [approx_contours[0]]
 
@@ -328,6 +349,8 @@ def run_cone(frame, dq):
             rect = cv.boundingRect(ch)
             bounding_rects.append(rect)
             b2.append(cv.minAreaRect(ch))
+            
+            
 
         if bounding_rects:
 
@@ -350,10 +373,8 @@ def run_cone(frame, dq):
             verticalWeightage= (mean_position[0]-boxCenter[1])/b2[0][1][1]
             horizontalWeightage= (mean_position[1]-boxCenter[0])/b2[0][1][0]
 
-            
-            #print(str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
 
-            cv.imwrite('e_result.png', fake_e_result)
+            #cv.imwrite('e_result.png', fake_e_result)
 
 
             if b2:
@@ -376,14 +397,17 @@ def run_cone(frame, dq):
                     else:
                         base_length=width
                     pyd_tp[1]=orientation
-                    print("CONE DETECTION: ", str(dist(mean_position, 4 if orientation!=0 else 7)), orientation)
+                    distArr=dist(mean_position, 4 if orientation!=0 else 7, (920, 720))
+                    print("CONE DETECTION: ", str(distArr), orientation)
 
                     total+=verticalWeightage
-                    frames+=1
-                    distance = base_length*k_cone
-                    angle=52.29*(122-zx)/122            
-                    table.putNumber("coneDistance", distance)
-                    table.putNumber("coneAngle", angle)
+                    frames+=1        
+                    table.putNumber("coneDistance", distArr[1][0])
+                    table.putNumber("coneAngle", distArr[1][1])
+                    table.putNumber("coneX", distArr[0][0])
+                    table.putNumber("coneY", distArr[0][1])
+                    table.putNumber("coneZ", distArr[0][2])
+
     pyd.insert(0, pyd_tp)
     pyd.pop(-1)
     norm_is = [c[0]/24 for c in pyd]
@@ -404,10 +428,10 @@ def run_cone(frame, dq):
 #@jit(target_backend='cuda')
 def CUDA_OPTIMIZED_RUN846():
     print("SCRIPT: ATTEMPTING CAM 1")
-    cap = cv.VideoCapture(1,cv.CAP_DSHOW)#"/home/tech/gamepiece.com/Cone.mov")
+    cap = cv.VideoCapture("/dev/video1")#"/home/tech/gamepiece.com/Cone.mov")
     if cap.isOpened()==False:
         print("SCRIPT: ATTEMPTING CAM 2")
-        cap = cv.VideoCapture(0)
+        cap = cv.VideoCapture("/dev/video0")
     if cap.isOpened()==False:
         print("SCRIPT: CAM CONN FAILURE")
     else:
@@ -419,12 +443,12 @@ def CUDA_OPTIMIZED_RUN846():
     counter = 0
     otime = time.time()
     if cap.isOpened():
-        dq = []
         while(True):
             counter+=1
             # frame = cv.imread('cone.jpg')
             _, frame = cap.read()
-            t1 = threading.Thread(target=run_cone, args=(frame,dq))
+            #cv.imwrite('real.png', frame)
+            t1 = threading.Thread(target=run_cone, args=(frame,))
             t2 = threading.Thread(target=run_cube, args=(frame,))
             t1.start()
             t2.start()
