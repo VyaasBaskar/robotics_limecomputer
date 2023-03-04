@@ -158,15 +158,17 @@ def deg2rad(n):
 
 def dist(point, hc):
     # hc=3.875
-    hm=38.15
-    y=1440
-    x = 1920
-    vtheta=deg2rad(28)
-    htheta=deg2rad(48.682)
-    am=deg2rad(64.4)
+    hm=28.15
+    y=864
+    x = 1056
+    vtheta=deg2rad(33)
+    htheta=deg2rad(47.92)
+    am=deg2rad(74.55)
     total=[0, 0, 0]
-    x = point[0]
-    y = point[1]
+
+    rat = vtheta/y
+    # x = point[1]
+    # y = point[0]
 
     # nx = (2 / (x_res)) * (x - x_res - 0.5)
     # ny = (2 / y_res) * (y_res - 0.5 - y)
@@ -194,26 +196,26 @@ def dist(point, hc):
     #dist = 
 
 
-
+    # print(point[0])
     ny = y/2-point[0]
-    print(ny)
+    # print(ny)
     nx = x/2-point[1]
     # print(nx)
 
-    ay= math.asin((ny/(y/2))*math.sin(vtheta/2))
+    ay= math.atan(math.tan(vtheta/2)*ny/(y/2))
     print(ay*180/3.14159)
     print((ay+am)*180/3.14159)
     print(hm-hc)
-    d=math.tan(am+ay)*(hm-hc) 
-    print(d)
-    alpha=math.atan(nx*math.tan(htheta/2)/x)
+    posy=math.tan(am+ay)*(hm-hc) 
+    # print(posy)
+    tx=math.atan(nx*math.tan(htheta/2)/(x/2))
     # print(alpha)
-    
-    x=math.sqrt(d*d + hc*hc)*math.sin(alpha)
-    y=math.sqrt(d*d - x*x)
+    # print(tx)
+    print(posy/math.cos(tx))
+    posx=posy*math.tan(tx)
 
-    total[0]=x
-    total[1]=y
+    total[0]=posx
+    total[1]=posy
     total[2]=hc
     return total
 
@@ -443,7 +445,7 @@ def run_cone(frame):
 
     fake_e_result = cv.circle(fake_e_result, (int(boxCenter[0]), int(boxCenter[1])), 3, (244, 0, 0), 3)
     fake_e_result = cv.circle(fake_e_result, (int(mean_position[1]), int(mean_position[0])), 3, (0, 244, 0), 3)
-    fake_e_result=cv.circle(fake_e_result, (960, 720), 30, (0, 0, 255), 30)
+    fake_e_result=cv.circle(fake_e_result, (528, 432), 30, (0, 0, 255), 30)
     fake_e_result=cv.drawContours(fake_e_result, [np.int0(cv.boxPoints(b2[0]))], 0, (0, 0, 255), 2)
     print(str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
     # print(boxCenter)
@@ -539,6 +541,7 @@ def CUDA_OPTIMIZED_RUN846():
             counter+=1
             # frame = cv.imread('cone.jpg')
             _, frame = cap.read()
+            cv.imwrite('ok.png', frame)
             #---------CUBE-------
             t1 = threading.Thread(target=run_cone, args=(frame,))
             t2 = threading.Thread(target=run_cube, args=(frame,))
