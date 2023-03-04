@@ -10,6 +10,7 @@ import threading
 #from keras.models import load_model
 from networktables import NetworkTables
 
+
 NetworkTables.initialize(server='roborio-846-frc.local')
 table = NetworkTables.getTable("GamePieces")
 
@@ -19,6 +20,7 @@ print("SCRIPT: imported all necessary libs")
 # fwd= open('fwd.txt', 'r')
 total=0
 frames=0
+pyd = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 np.set_printoptions(suppress=True)
 
 #@jit(target_backend='cuda')
@@ -139,8 +141,8 @@ def run_cube(frame):
 
     if b2:
         (zx, zy), (width, height), angle  = b2[0]
-        if width/height >= 0.5 and width/height <= 2 and width*height>=100:
-            print("CUBE DETECTION: " + str(width) + "," + str(height) + " | " + str(zx) + "," + str(zy))
+        if width/height >= 0.5 and width/height <= 2 and width*height>=1000:
+            print("CUBE DETECTION: " + str(dist([zx+width/2, zx+height/2], 6.75)))
             pass
 
 
@@ -159,8 +161,8 @@ def deg2rad(n):
 def dist(point, hc):
     # hc=3.875
     hm=28
-    y=864
-    x = 1056
+    y=432
+    x = 528
     vtheta=deg2rad(33)
     htheta=deg2rad(47.92)
     am=deg2rad(56.66)
@@ -217,11 +219,13 @@ def dist(point, hc):
     total[0]=posx
     total[1]=posy
     total[2]=hc
-    return total
 
-def run_cone(frame):
+    return (total, [posy/math.cos(tx), tx])
+
+def run_cone(frame, dq):
     global total
     global frames
+    global pyd
     # try:
     k_cone=1
     k_Fwd=-0.05
@@ -233,8 +237,8 @@ def run_cone(frame):
     #result = cv.bitwise_and(frame, frame, mask = mask)
 
 #---
-    upper_orange1 = np.array([0, 227, 227])
-    upper_orange2 = np.array([34, 255, 255])
+    upper_orange1 = np.array([0, 210, 175])
+    upper_orange2 = np.array([33, 255, 255])
 
     imgThreshHigh = cv.inRange(hsv, upper_orange1, upper_orange2)
 
@@ -245,7 +249,7 @@ def run_cone(frame):
     #result = cv.bitwise_or(imgThreshLow, imgThreshHigh)
 #--
 
-    kernel = np.ones((5,5),np.uint8)
+    kernel = np.ones((3,3),np.uint8)
 
     result = cv.erode(result, kernel, iterations = 3)
     result = cv.dilate(result, kernel, iterations = 2)
@@ -299,100 +303,101 @@ def run_cone(frame):
         approx_contours.append(approx)
 
     approx_contours = sorted(approx_contours, key=lambda c: cv.contourArea(c), reverse=True)
-    approx_contours = [approx_contours[0]]
+    pyd_tp = [0, -1]
+    if (len(approx_contours)):
+        approx_contours = [approx_contours[0]]
 
 
 
-    all_convex_hulls = []
-    for ac in approx_contours:
-        all_convex_hulls.append(cv.convexHull(ac))
+        all_convex_hulls = []
+        for ac in approx_contours:
+            all_convex_hulls.append(cv.convexHull(ac))
 
 
-    convex_hulls_3to10 = []
-    for ch in all_convex_hulls:
-        if 3 <= len(ch) <= 6:
-            convex_hulls_3to10.append(cv.convexHull(ch))
+        convex_hulls_3to10 = []
+        for ch in all_convex_hulls:
+            if 3 <= len(ch) <= 5:
+                convex_hulls_3to10.append(cv.convexHull(ch))
 
-    cones = []
-    bounding_rects = []
-    b2 = []
-    for ch in convex_hulls_3to10:
-        #if convex_hull_pointing_up(ch):
-        cones.append(ch)
-        rect = cv.boundingRect(ch)
-        bounding_rects.append(rect)
-        b2.append(cv.minAreaRect(ch))
+        cones = []
+        bounding_rects = []
+        b2 = []
+        for ch in convex_hulls_3to10:
+            #if convex_hull_pointing_up(ch):
+            cones.append(ch)
+            rect = cv.boundingRect(ch)
+            bounding_rects.append(rect)
+            b2.append(cv.minAreaRect(ch))
 
-    dims = bounding_rects[0]
-    y_copy_result = fake_e_result[dims[1]:(dims[1]+dims[3]), (dims[0]):(dims[0]+dims[2])]
+        if bounding_rects:
 
-    cv.rectangle(fake_e_result, (bounding_rects[0][0], bounding_rects[0][1]), (bounding_rects[0][0]+bounding_rects[0][2], bounding_rects[0][1]+bounding_rects[0][3]), (255, 255, 255), 1)
+            dims = bounding_rects[0]
+            y_copy_result = fake_e_result[dims[1]:(dims[1]+dims[3]), (dims[0]):(dims[0]+dims[2])]
 
-    box=cv.boxPoints(b2[0])
+            cv.rectangle(fake_e_result, (bounding_rects[0][0], bounding_rects[0][1]), (bounding_rects[0][0]+bounding_rects[0][2], bounding_rects[0][1]+bounding_rects[0][3]), (255, 255, 255), 1)
 
-    boxCenter=((box[0][0]+box[2][0])/2, (box[0][1]+box[2][1])/2)
+            box=cv.boxPoints(b2[0])
 
-    mask = y_copy_result[:, :, 2] != 0
+            boxCenter=((box[0][0]+box[2][0])/2, (box[0][1]+box[2][1])/2)
 
-
-    mean_position = np.mean(np.argwhere(mask), axis=0)
-    mean_position=(mean_position[0]+dims[1], mean_position[1]+dims[0])
+            mask = y_copy_result[:, :, 2] != 0
 
 
-    verticalWeightage= (mean_position[0]-boxCenter[1])/b2[0][1][1]
-    horizontalWeightage= (mean_position[1]-boxCenter[0])/b2[0][1][0]
-
-    fake_e_result = cv.circle(fake_e_result, (int(boxCenter[0]), int(boxCenter[1])), 3, (244, 0, 0), 3)
-    fake_e_result = cv.circle(fake_e_result, (int(mean_position[1]), int(mean_position[0])), 3, (0, 244, 0), 3)
-    fake_e_result=cv.circle(fake_e_result, (528, 432), 30, (0, 0, 255), 30)
-    fake_e_result=cv.drawContours(fake_e_result, [np.int0(cv.boxPoints(b2[0]))], 0, (0, 0, 255), 2)
-    print(str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
-    # print(boxCenter)
-
-    cv.imwrite('e_result.png', fake_e_result)
-    cv.imshow('e_result.png', fake_e_result)
+            mean_position = np.mean(np.argwhere(mask), axis=0)
+            mean_position=(mean_position[0]+dims[1], mean_position[1]+dims[0])
 
 
+            verticalWeightage= (mean_position[0]-boxCenter[1])/b2[0][1][1]
+            horizontalWeightage= (mean_position[1]-boxCenter[0])/b2[0][1][0]
+
+            
+            #print(str(len(np.array(result))), "   ", str(len(np.array(result)[0])))
+
+            cv.imwrite('e_result.png', fake_e_result)
 
 
+            if b2:
+                (zx, zy), (width, height), angle  = b2[0]
+                if width/height >= 0.2 and width/height <= 5 and width*height>=2500:
+                    pyd_tp[0] = 1
+                    # print(bounding_rects[0][2]/bounding_rects[0][3])
+                    base_length=0 
+                    orientation=0
+                    if convex_hull_pointing_up(cones[0], b2[0]):
+                        orientation=0
+                    elif not(verticalWeightage>0.05) and convex_hull_side(cones[0], bounding_rects[0]):
+                        orientation=1
+                    elif verticalWeightage<k_Fwd:  
+                        orientation=2
+                    else:
+                        orientation=3
+                    if orientation==1:
+                        base_length=height
+                    else:
+                        base_length=width
+                    pyd_tp[1]=orientation
+                    print("CONE DETECTION: ", str(dist(mean_position, 4 if orientation!=0 else 7)), orientation)
 
-    if b2:# and coneis==1:
-        (zx, zy), (width, height), angle  = b2[0]
-        if width/height >= 0.2 and width/height <= 5 and width*height>=25:
-            # print(bounding_rects[0][2]/bounding_rects[0][3])
-            base_length=0 
-            orientation=0
-            if verticalWeightage>0.05 and not(convex_hull_side(cones[0], bounding_rects[0])):
-                orientation=0
-            elif not(verticalWeightage>0.05) and convex_hull_side(cones[0], bounding_rects[0]):
-                orientation=1
-            elif verticalWeightage<k_Fwd:  
-                orientation=2
-            else:
-                orientation=3
-            if orientation==1:
-                base_length=height
-            else:
-                base_length=width
-            print("CONE DETECTION: ", str(dist(mean_position, 4)))
-
-            total+=verticalWeightage
-            frames+=1
-            distance = base_length*k_cone
-            angle=52.29*(122-zx)/122            
-            table.putNumber("coneDistance", distance)
-            table.putNumber("coneAngle", angle)
-            table.putNumber("coneOrientation", orientation)
-            return
-    table.putNumber("coneDistance", 0)
-    table.putNumber("coneAngle", 0)
-    table.putNumber("coneProbability", 0)
-    # print('xcfghjkgfdfghjkl', cones[0])
-    cv.drawContours(result, cones, 0, (255, 255, 255), 3)
-    cv.imwrite('awf.png', result)
-    # except Exception as e:
-    #     print(e)
-    
+                    total+=verticalWeightage
+                    frames+=1
+                    distance = base_length*k_cone
+                    angle=52.29*(122-zx)/122            
+                    table.putNumber("coneDistance", distance)
+                    table.putNumber("coneAngle", angle)
+    pyd.insert(0, pyd_tp)
+    pyd.pop(-1)
+    norm_is = [c[0]/24 for c in pyd]
+    ori_max = []
+    for elem in pyd:
+        if elem[1] != -1:
+            ori_max.append(elem[1])
+    if not len(ori_max):
+        ori_max.append(-1)
+    table.putNumber("coneProbability", sum(norm_is))
+    table.putNumber("coneOrientation", round(sum(ori_max)/len(ori_max)))
+        # except Exception as e:
+        #     print(e)
+        
 
 
 #cuda R function
@@ -414,23 +419,18 @@ def CUDA_OPTIMIZED_RUN846():
     counter = 0
     otime = time.time()
     if cap.isOpened():
-        t1 = threading.Thread(target=run_cone, args=(cap,))
-        t2 = threading.Thread(target=run_cube, args=(cap,))
-        t1.start()
-        t2.start()
+        dq = []
         while(True):
             counter+=1
             # frame = cv.imread('cone.jpg')
             _, frame = cap.read()
-            #---------CUBE-------
-            t1 = threading.Thread(target=run_cone, args=(frame,))
+            t1 = threading.Thread(target=run_cone, args=(frame,dq))
             t2 = threading.Thread(target=run_cube, args=(frame,))
             t1.start()
             t2.start()
             t1.join()
             t2.join()
 
-            #---------CONE-------
 
             if counter % 10 == 0:
                 counter = 0
